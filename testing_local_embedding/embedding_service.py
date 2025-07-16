@@ -1,4 +1,6 @@
 import logging
+import uuid
+import hashlib
 from qdrant_client import QdrantClient, models
 from sentence_transformers import SentenceTransformer
 import config
@@ -58,7 +60,12 @@ class EmbeddingService:
         # 3. Create Qdrant points
         points = []
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-            point_id = f"{file_path}_{i}" # Create a unique ID for each chunk
+            # Create a deterministic UUID for the point ID to ensure it's valid.
+            # This helps prevent 400 Bad Request errors from Qdrant.
+            seed = f"{file_path}_{i}"
+            hashed_seed = hashlib.sha256(seed.encode('utf-8')).digest()
+            point_id = str(uuid.UUID(bytes=hashed_seed[:16]))
+
             points.append(models.PointStruct(
                 id=point_id,
                 vector=embedding.tolist(),
@@ -77,3 +84,4 @@ class EmbeddingService:
                 wait=True # Wait for the operation to complete
             )
             logging.info(f"Successfully upserted {len(points)} points for {file_path}")
+

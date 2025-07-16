@@ -25,8 +25,18 @@ DIRECTORIES_TO_WATCH = [
 # --- Filtering Configuration ---
 # Ignore files with these extensions. Add any others you need.
 EXCLUDED_EXTENSIONS = [
+    # General Exclusions
     ".exe", ".dll", ".so", ".zip", ".rar", ".iso", ".img",
-    ".log", ".tmp", ".swp", ".DS_Store"
+    ".log", ".tmp", ".swp", ".DS_Store",
+
+    # Image Files
+    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp", ".svg",
+
+    # Video Files
+    ".mp4", ".mkv", ".avi", ".mov", ".wmv", ".flv",
+
+    # Audio Files
+    ".mp3", ".wav", ".ogg", ".flac", ".aac"
 ]
 
 # Ignore files larger than this size in megabytes.

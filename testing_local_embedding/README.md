@@ -5,7 +5,7 @@ This project is a proof-of-concept script to test the core logic of an AI-powere
 1.  Scan and watch local filesystem directories (e.g., Desktop, Documents).
 2.  Generate vector embeddings for text files locally using a sentence-transformer model.
 3.  Store those embeddings in a local Qdrant vector database.
-4.  Architect the code in a way that simulates a Managed Component Protocol (MCP) setup, with a clear separation between the "Filesystem Crawler" and the "Embedding Service".
+4.  Architect the code in a way that simulates a Model Context Protocol (MCP) setup, with a clear separation between the "Filesystem Crawler" and the "Embedding Service".
 
 ## How it Works
 

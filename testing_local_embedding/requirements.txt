@@ -2,3 +2,5 @@
 qdrant-client
 sentence-transformers
 watchdog
+python-docx
+pypdf

@@ -6,8 +6,28 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import config
 from embedding_service import EmbeddingService
+import docx
+from PyPDF2 import PdfReader
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - [FileSystemCrawler] - %(message)s')
+
+def read_text_from_docx(file_path: str) -> str:
+    """Extracts text from a .docx file."""
+    try:
+        doc = docx.Document(file_path)
+        return "\n".join([para.text for para in doc.paragraphs])
+    except Exception as e:
+        logging.error(f"Error reading DOCX {file_path}: {e}")
+        return ""
+
+def read_text_from_pdf(file_path: str) -> str:
+    """Extracts text from a .pdf file."""
+    try:
+        reader = PdfReader(file_path)
+        return "\n".join([page.extract_text() for page in reader.pages])
+    except Exception as e:
+        logging.error(f"Error reading PDF {file_path}: {e}")
+        return ""
 
 class FileChangeHandler(FileSystemEventHandler):
     """Handles events from the filesystem watcher."""
@@ -49,11 +69,27 @@ def process_file(file_path: str, embedding_service: EmbeddingService):
         return
     
     try:
-        # We try to read as text. For a full app, you'd add handlers for .pdf, .docx, etc.
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
-        
-        embedding_service.embed_and_store_document(file_path, content)
+        content = ""
+        _, ext = os.path.splitext(file_path)
+        ext = ext.lower()
+
+        if ext == '.txt':
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+        elif ext == '.docx':
+            content = read_text_from_docx(file_path)
+        elif ext == '.pdf':
+            content = read_text_from_pdf(file_path)
+        else:
+            # Try to read as a plain text file by default
+            logging.debug(f"Attempting to read {file_path} as plain text.")
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+
+        if content.strip():
+             embedding_service.embed_and_store_document(file_path, content)
+        else:
+            logging.warning(f"No content extracted from {file_path}. Skipping.")
 
     except Exception as e:
         logging.error(f"Failed to process file {file_path}: {e}")
@@ -97,3 +133,4 @@ class FilesystemCrawler:
         except KeyboardInterrupt:
             self.observer.stop()
         self.observer.join()
+
