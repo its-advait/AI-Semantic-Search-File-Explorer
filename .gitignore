@@ -3,6 +3,7 @@
 Thumbs.db
 
 # IDE and editor directories
+.gemini/
 .idea/
 .vscode/
 *.swp
