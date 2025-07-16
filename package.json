@@ -1,0 +1,28 @@
+{
+  "name": "bench",
+  "version": "1.0.0",
+  "description": "bench",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/minamisjef00/bench.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/minamisjef00/bench/issues"
+  },
+  "homepage": "https://github.com/minamisjef00/bench#readme",
+  "dependencies": {
+    "@openrouter/ai-sdk-provider": "^1.0.0-beta.1",
+    "@qdrant/js-client-rest": "^1.14.1",
+    "dotenv": "^17.2.0",
+    "electron": "^37.2.2",
+    "mcp.js": "^0.1.5-beta.2"
+  }
+}
