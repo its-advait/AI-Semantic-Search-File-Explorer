@@ -1,14 +1,35 @@
-# Dependencies
-/node_modules
+# OS-generated files
+.DS_Store
+Thumbs.db
 
-# Environment variables
-.env
+# IDE and editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
 
-# Log files
+# Node.js
+# Ignore node_modules at the root and in any package
+**/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Build output
-/dist
-/build
+# Python
+# Ignore virtual environments, cache, and compiled files
+**/__pycache__
+**/*.pyc
+.venv/
+venv/
+env/
+
+# Local data and logs
+# Ignore the Qdrant data directory from the test script
+qdrant_data/
+*.log
+
+# Environment variables
+.env
+.env.*
+!.env.example
