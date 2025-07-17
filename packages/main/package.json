@@ -1,0 +1,13 @@
+{
+  "name": "@bench/main",
+  "version": "1.0.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "SET NODE_ENV=development&& electron ."
+  },
+  "dependencies": {
+    "electron": "^37.2.2"
+  }
+}

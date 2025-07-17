@@ -290,7 +290,7 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
           <div className="relative w-full h-full bg-gradient-to-br from-background to-muted/20">
             {/* Vector group legend */}
             <div className="absolute top-4 right-4 z-10">
-              <Card className="p-3">
+              <Card className="">
                 <h4 className="font-medium mb-2">Vector Groups</h4>
                 <div className="space-y-1">
                   {vectorGroups.map((group) => (

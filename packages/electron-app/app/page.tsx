@@ -71,45 +71,43 @@ export default function Home() {
   }
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light">
-      <SidebarProvider>
-        <div className="flex min-h-screen w-full bg-white dark:bg-gray-900">
-          <AppSidebar
-            currentView={currentView}
-            onViewChange={setCurrentView}
-            onFileSelect={setSelectedFile}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
-          <div className="flex-1 flex flex-col">
-            {/* Google Drive Style Header */}
-            <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors" />
-                <div className="flex items-center gap-3">
-                  <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">LibrAIry</h1>
-                </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-white dark:bg-gray-900">
+        <AppSidebar
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          onFileSelect={setSelectedFile}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+        />
+        <div className="flex-1 flex flex-col">
+          {/* Google Drive Style Header */}
+          <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <div className="flex items-center gap-4">
+              <SidebarTrigger className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors" />
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">LibrAIry</h1>
               </div>
+            </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" className="p-2">
-                  <HelpCircle className="w-5 h-5" />
-                </Button>
-                <Button variant="ghost" size="sm" className="p-2">
-                  <Settings className="w-5 h-5" />
-                </Button>
-                <Button variant="ghost" size="sm" className="p-2">
-                  <Apps className="w-5 h-5" />
-                </Button>
-                <ThemeToggle />
-              </div>
-            </header>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" className="p-2">
+                <HelpCircle className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="sm" className="p-2">
+                <Settings className="w-5 h-5" />
+              </Button>
+              <Button variant="ghost" size="sm" className="p-2">
+                <Apps className="w-5 h-5" />
+              </Button>
+              <ThemeToggle />
+            </div>
+          </header>
 
-            <main className="flex-1 overflow-hidden bg-white dark:bg-gray-900">{renderContent()}</main>
-          </div>
-          <AiAssistant />
+          <main className="flex-1 overflow-hidden bg-white dark:bg-gray-900">{renderContent()}</main>
         </div>
-      </SidebarProvider>
-    </ThemeProvider>
+        <AiAssistant />
+      </div>
+    </SidebarProvider>
   )
 }
