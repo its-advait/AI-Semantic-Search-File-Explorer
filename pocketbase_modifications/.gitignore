@@ -1,2 +1,62 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+ai-file-explorer
 
-bin/
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# PocketBase data
+data/
+pb_data/
+*.db
+*.db-journal
+
+# Logs
+*.log
+build-errors.log
+
+# Temporary files
+tmp/
+temp/
+
+# Environment files
+.env
+.env.local
+
+# SQLite extensions
+extensions/*.so
+extensions/*.dll
+extensions/*.dylib
+
+# Test files
+test-files/
+
+# Air live reload
+.air.toml.local
+
+# Docker
+.dockerignore.local

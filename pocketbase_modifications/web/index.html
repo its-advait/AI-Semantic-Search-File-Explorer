@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI File Explorer - Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+        }
+
+        .section {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"], input[type="number"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .loading {
+            display: none;
+            color: #3498db;
+            font-style: italic;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .status.online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI File Explorer</h1>
+            <p>Test interface for PocketBase AI file exploration with semantic search</p>
+            <div id="status" class="status">Checking connection...</div>
+        </div>
+
+        <div class="grid">
+            <div class="section">
+                <h2>📁 Crawl Directory</h2>
+                <div class="form-group">
+                    <label for="crawl-path">Directory Path:</label>
+                    <input type="text" id="crawl-path" placeholder="/path/to/directory" value="/Users/noahlee/Desktop">
+                </div>
+                <button onclick="crawlDirectory()">Crawl Directory</button>
+                <div class="loading" id="crawl-loading">Crawling directory...</div>
+                <div id="crawl-result" class="result" style="display: none;"></div>
+            </div>
+
+            <div class="section">
+                <h2>🧠 Generate Embeddings</h2>
+                <div class="form-group">
+                    <label for="embed-file-id">File ID:</label>
+                    <input type="text" id="embed-file-id" placeholder="file_abc123">
+                </div>
+                <button onclick="generateEmbedding()">Generate Embedding</button>
+                <div class="loading" id="embed-loading">Generating embedding...</div>
+                <div id="embed-result" class="result" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🔍 Semantic Search</h2>
+            <div class="form-group">
+                <label for="search-query">Search Query:</label>
+                <input type="text" id="search-query" placeholder="machine learning algorithms">
+            </div>
+            <div class="form-group">
+                <label for="search-limit">Limit:</label>
+                <input type="number" id="search-limit" value="10" min="1" max="100">
+            </div>
+            <button onclick="semanticSearch()">Search</button>
+            <div class="loading" id="search-loading">Searching...</div>
+            <div id="search-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="section">
+            <h2>📊 API Status</h2>
+            <button onclick="checkHealth()">Check Health</button>
+            <button onclick="listCollections()">List Collections</button>
+            <div class="loading" id="health-loading">Checking...</div>
+            <div id="health-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8090';
+
+        // Check API status on load
+        window.onload = function() {
+            checkApiStatus();
+        };
+
+        async function checkApiStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const status = document.getElementById('status');
+                if (response.ok) {
+                    status.textContent = '✅ API Connected';
+                    status.className = 'status online';
+                } else {
+                    status.textContent = '❌ API Disconnected';
+                    status.className = 'status offline';
+                }
+            } catch (error) {
+                const status = document.getElementById('status');
+                status.textContent = '❌ API Disconnected';
+                status.className = 'status offline';
+            }
+        }
+
+        async function crawlDirectory() {
+            const path = document.getElementById('crawl-path').value;
+            if (!path) {
+                alert('Please enter a directory path');
+                return;
+            }
+
+            showLoading('crawl-loading');
+            hideResult('crawl-result');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/crawl`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ path }),
+                });
+
+                const data = await response.json();
+                hideLoading('crawl-loading');
+
+                if (response.ok) {
+                    showResult('crawl-result', JSON.stringify(data, null, 2), 'success');
+                } else {
+                    showResult('crawl-result', JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                hideLoading('crawl-loading');
+                showResult('crawl-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function generateEmbedding() {
+            const fileId = document.getElementById('embed-file-id').value;
+            if (!fileId) {
+                alert('Please enter a file ID');
+                return;
+            }
+
+            showLoading('embed-loading');
+            hideResult('embed-result');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/embed`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ file_id: fileId }),
+                });
+
+                const data = await response.json();
+                hideLoading('embed-loading');
+
+                if (response.ok) {
+                    showResult('embed-result', JSON.stringify(data, null, 2), 'success');
+                } else {
+                    showResult('embed-result', JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                hideLoading('embed-loading');
+                showResult('embed-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function semanticSearch() {
+            const query = document.getElementById('search-query').value;
+            const limit = parseInt(document.getElementById('search-limit').value) || 10;
+
+            if (!query) {
+                alert('Please enter a search query');
+                return;
+            }
+
+            showLoading('search-loading');
+            hideResult('search-result');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query, limit }),
+                });
+
+                const data = await response.json();
+                hideLoading('search-loading');
+
+                if (response.ok) {
+                    showResult('search-result', JSON.stringify(data, null, 2), 'success');
+                } else {
+                    showResult('search-result', JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                hideLoading('search-loading');
+                showResult('search-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkHealth() {
+            showLoading('health-loading');
+            hideResult('health-result');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                const data = await response.json();
+                hideLoading('health-loading');
+
+                if (response.ok) {
+                    showResult('health-result', JSON.stringify(data, null, 2), 'success');
+                } else {
+                    showResult('health-result', JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                hideLoading('health-loading');
+                showResult('health-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function listCollections() {
+            showLoading('health-loading');
+            hideResult('health-result');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/collections`);
+                const data = await response.json();
+                hideLoading('health-loading');
+
+                if (response.ok) {
+                    showResult('health-result', JSON.stringify(data, null, 2), 'success');
+                } else {
+                    showResult('health-result', JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                hideLoading('health-loading');
+                showResult('health-result', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showLoading(id) {
+            document.getElementById(id).style.display = 'block';
+        }
+
+        function hideLoading(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function showResult(id, content, type = '') {
+            const element = document.getElementById(id);
+            element.textContent = content;
+            element.className = `result ${type}`;
+            element.style.display = 'block';
+        }
+
+        function hideResult(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+    </script>
+</body>
+</html>
