@@ -31,12 +31,12 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			dirPath := args[0]
 			log.Printf("🕷️  Starting file crawl of: %s", dirPath)
-			
+
 			// Initialize the app without starting the server
 			if err := app.Bootstrap(); err != nil {
 				log.Fatalf("Failed to bootstrap app: %v", err)
 			}
-			
+
 			// Create file processor service
 			processor := fileprocessor.NewService(app.DB(), os.Getenv("OPENAI_API_KEY"))
 			
@@ -44,7 +44,7 @@ func main() {
 			if err := processor.ProcessDirectory(dirPath); err != nil {
 				log.Fatalf("Failed to process directory: %v", err)
 			}
-			
+
 			log.Println("✅ File crawl completed successfully!")
 		},
 	})
