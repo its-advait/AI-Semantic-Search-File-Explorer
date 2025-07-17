@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/ai-file-explorer/pocketbase-modifications/internal/crawler"
 	"github.com/ai-file-explorer/pocketbase-modifications/internal/embeddings"
@@ -19,11 +18,11 @@ type Service struct {
 }
 
 // NewService creates a new file processor service
-func NewService(db dbx.Builder) *Service {
+func NewService(db dbx.Builder, apiKey string) *Service {
 	return &Service{
 		db:               db,
 		crawler:         crawler.NewService(),
-		embeddingService: embeddings.NewService(db),
+		embeddingService: embeddings.NewService(db, apiKey),
 	}
 }
 

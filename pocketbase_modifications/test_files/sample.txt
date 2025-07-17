@@ -1,0 +1,12 @@
+This is a sample text file for testing the AI file explorer.
+It contains information about artificial intelligence and machine learning.
+The file crawler should be able to read this content and generate embeddings for semantic search.
+
+Key topics covered:
+- Natural language processing
+- Computer vision
+- Deep learning algorithms
+- Neural networks
+- Data preprocessing techniques
+
+This content will be used to test the embedding generation and vector similarity search functionality.

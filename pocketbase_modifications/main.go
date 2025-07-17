@@ -38,7 +38,7 @@ func main() {
 			}
 			
 			// Create file processor service
-			processor := fileprocessor.NewService(app.DB())
+			processor := fileprocessor.NewService(app.DB(), os.Getenv("OPENAI_API_KEY"))
 			
 			// Process the directory
 			if err := processor.ProcessDirectory(dirPath); err != nil {
@@ -53,15 +53,13 @@ func main() {
 	var (
 		embeddingService *embeddings.Service
 		searchService    *search.Service
-		fileProcessor    *fileprocessor.Service
 	)
 
 	// Initialize services once
 	app.OnServe().BindFunc(func(e *core.ServeEvent) error {
 		// Initialize services with PocketBase DB
-		embeddingService = embeddings.NewService(app.DB())
+		embeddingService = embeddings.NewService(app.DB(), os.Getenv("OPENAI_API_KEY"))
 		searchService = search.NewService(app.DB())
-		fileProcessor = fileprocessor.NewService(app.DB())
 		mcpServer := mcp.NewSimpleMCPServer(app.DB())
 
 		// Set up service dependencies
