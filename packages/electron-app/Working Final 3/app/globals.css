@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fonts are now handled by next/font in app/layout.tsx */
+
+@layer base {
+  :root {
+    --background: 255 255 255;
+    --foreground: 15 23 42;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --popover: 255 255 255;
+    --popover-foreground: 15 23 42;
+    --primary: 0 0 0;
+    --primary-foreground: 255 255 255;
+    --secondary: 248 250 252;
+    --secondary-foreground: 15 23 42;
+    --muted: 248 250 252;
+    --muted-foreground: 71 85 105;
+    --accent: 64 64 64;
+    --accent-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --ring: 0 0 0;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0 0;
+    --foreground: 255 255 255;
+    --card: 15 23 42;
+    --card-foreground: 255 255 255;
+    --popover: 15 23 42;
+    --popover-foreground: 255 255 255;
+    --primary: 255 255 255;
+    --primary-foreground: 0 0 0;
+    --secondary: 30 41 59;
+    --secondary-foreground: 226 232 240;
+    --muted: 30 41 59;
+    --muted-foreground: 148 163 184;
+    --accent: 200 200 200;
+    --accent-foreground: 0 0 0;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 51 65 85;
+    --input: 51 65 85;
+    --ring: 255 255 255;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-gradient-to-br from-gray-50/30 via-background to-gray-50/20 text-foreground min-h-screen;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
+    @apply bg-gradient-to-br from-gray-950 via-gray-900 to-black;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+}
+
+@layer components {
+  /* Light mode: 90% opacity, Dark mode: 95% opacity (less transparent) */
+  .glass {
+    @apply bg-white/90 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200/70 dark:border-gray-700/80;
+  }
+
+  /* Light mode: 95% opacity, Dark mode: 95% opacity (much less transparent) */
+  .glass-card {
+    @apply bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border border-gray-200/80 dark:border-gray-700/90 shadow-lg shadow-gray-500/10 dark:shadow-black/50;
+  }
+
+  /* More opaque buttons with stronger borders and better contrast */
+  .glass-button {
+    @apply bg-white/95 dark:bg-gray-700/95 backdrop-blur-md border-2 border-gray-300/90 dark:border-gray-500/90 hover:bg-white dark:hover:bg-gray-600 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, #000000, #404040, #1a1a1a);
+    background-size: 200% 200%;
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, #1a1a1a, #000000, #404040);
+    background-size: 200% 200%;
+  }
+
+  .gradient-secondary {
+    background: linear-gradient(135deg, #404040, #1a1a1a, #000000);
+    background-size: 200% 200%;
+  }
+
+  .gradient-vibrant {
+    background: linear-gradient(135deg, #404040, #666666, #1a1a1a, #000000);
+    background-size: 300% 300%;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float 6s ease-in-out infinite 2s;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-bounce-slow {
+    animation: bounce 3s infinite;
+  }
+
+  .animate-count-up {
+    animation: countUp 2s ease-out forwards;
+  }
+
+  .animate-gradient {
+    animation: gradient-shift 8s ease-in-out infinite;
+  }
+
+  .animate-color-pulse {
+    animation: color-pulse 3s ease-in-out infinite;
+  }
+
+  .font-display {
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    line-height: 1.1;
+  }
+
+  .font-body {
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+  }
+
+  .clarity-glow {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15), 0 0 40px rgba(64, 64, 64, 0.1);
+  }
+
+  .dark .clarity-glow {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.25), 0 0 40px rgba(200, 200, 200, 0.15);
+  }
+
+  .clarity-text {
+    background: linear-gradient(135deg, #000000, #1a1a1a, #404040);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-shift 6s ease-in-out infinite;
+  }
+
+  .dark .clarity-text {
+    background: linear-gradient(135deg, #ffffff, #e5e5e5, #cccccc);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-shift 6s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes countUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes color-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
