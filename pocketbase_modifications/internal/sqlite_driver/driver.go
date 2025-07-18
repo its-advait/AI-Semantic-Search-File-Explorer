@@ -52,6 +52,13 @@ func InitCustomDriver() error {
 	return nil
 }
 
+// init automatically initializes the custom SQLite driver when the package is imported
+func init() {
+	if err := InitCustomDriver(); err != nil {
+		log.Printf("Failed to initialize custom SQLite driver: %v", err)
+	}
+}
+
 // Open implements the driver.Driver interface
 func (d *CustomSQLiteDriver) Open(name string) (driver.Conn, error) {
 	return d.SQLiteDriver.Open(name)

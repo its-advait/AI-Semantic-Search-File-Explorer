@@ -66,10 +66,11 @@ func (s *Service) processFile(file crawler.FileInfo) error {
 	
 	var fileId string
 	if err != nil {
-		// Insert new file record
-		result, err := s.db.NewQuery(`
+		// Insert new file record and get the generated ID
+		err := s.db.NewQuery(`
 			INSERT INTO files (path, name, size, content_type, content, extension, mod_time, embedding_status, created, updated)
 			VALUES ({:path}, {:name}, {:size}, {:content_type}, {:content}, {:extension}, {:mod_time}, 'pending', datetime('now'), datetime('now'))
+			RETURNING id
 		`).Bind(map[string]any{
 			"path":         file.Path,
 			"name":         file.Name,
@@ -78,14 +79,11 @@ func (s *Service) processFile(file crawler.FileInfo) error {
 			"content":      file.Content,
 			"extension":    file.Extension,
 			"mod_time":     file.ModTime.Format("2006-01-02 15:04:05"),
-		}).Execute()
+		}).Row(&fileId)
 		
 		if err != nil {
 			return fmt.Errorf("failed to insert file record: %w", err)
 		}
-		
-		lastId, _ := result.LastInsertId()
-		fileId = fmt.Sprintf("%d", lastId)
 	} else {
 		// Update existing file record
 		fileId = existingId
