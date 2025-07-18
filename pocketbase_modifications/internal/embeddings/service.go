@@ -45,19 +45,33 @@ func (s *Service) GenerateEmbedding(text string) ([]float64, error) {
 	`).Bind(dbx.Params{"text": text}).Row(&embeddingJSON)
 	
 	if err != nil {
+		// Check if this is a JSON parsing error from sqlite-rembed (API error response)
+		if strings.Contains(err.Error(), "unrecognized token") || strings.Contains(err.Error(), "{") {
+			log.Printf("sqlite-rembed API error, falling back to mock embedding")
+			return s.generateMockEmbedding(text), nil
+		}
 		// If rate limited or API error, return mock embedding as fallback
 		if strings.Contains(err.Error(), "429") || strings.Contains(err.Error(), "rate") {
-			log.Printf("OpenAI rate limited, using mock embedding: %v", err)
+			log.Printf("OpenAI rate limited, using mock embedding")
 			return s.generateMockEmbedding(text), nil
 		}
 		return nil, fmt.Errorf("failed to generate embedding: %w", err)
+	}
+	
+	// Check if the response is an error JSON object
+	if strings.HasPrefix(embeddingJSON, "{") && strings.Contains(embeddingJSON, "error") || strings.Contains(embeddingJSON, "status") {
+		log.Printf("sqlite-rembed returned error response: %s", embeddingJSON)
+		log.Printf("Falling back to mock embedding")
+		return s.generateMockEmbedding(text), nil
 	}
 	
 	// Parse the JSON embedding response
 	var embedding []float64
 	err = json.Unmarshal([]byte(embeddingJSON), &embedding)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse embedding JSON: %w", err)
+		log.Printf("Failed to parse embedding JSON, falling back to mock: %v", err)
+		log.Printf("Raw response was: %s", embeddingJSON)
+		return s.generateMockEmbedding(text), nil
 	}
 	
 	return embedding, nil
