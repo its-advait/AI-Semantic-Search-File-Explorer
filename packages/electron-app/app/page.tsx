@@ -13,29 +13,49 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Settings, HelpCircle, AppWindowIcon as Apps } from "lucide-react"
 import { AiAssistant } from "@/components/ai-assistant"
+import { ModelProvider, useModel } from "@/components/model-provider"
+import { Loading } from "@/components/ui/loading"
 
 export type ViewType = "dashboard" | "explorer" | "search" | "document"
 
 export interface FileItem {
   id: string
-  name: string
-  type: "document" | "image" | "code" | "video" | "audio" | "other" | "folder"
-  size: string
-  modified: string
-  path: string
-  vectorGroup?: string
+  filename: string
+  filepath: string
+  date_created: string
+  date_modified: string
+  type?: "document" | "image" | "code" | "video" | "audio" | "other" | "folder" // Keep for UI, can be derived
+  size?: string // Keep for UI, can be derived
+  vectorGroup?: string // Keep for UI, can be derived
   similarity?: number
   preview?: string
-  content?: string
   x?: number
   y?: number
 }
 
 export default function Home() {
+  return (
+    <ModelProvider>
+      <HomeContent />
+    </ModelProvider>
+  );
+}
+
+function HomeContent() {
   const [currentView, setCurrentView] = useState<ViewType>("dashboard")
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  // Removed selectedGroup state
+
+  const { isModelLoaded } = useModel();
+
+  if (!isModelLoaded) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center">
+        <Loading />
+        <p className="ml-4 text-lg">Loading AI model...</p>
+      </div>
+    );
+  }
 
   const renderContent = () => {
     switch (currentView) {

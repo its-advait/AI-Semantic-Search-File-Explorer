@@ -7,60 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Search, FileText, ImageIcon, Code, Video, Music, Clock, Star, Filter, Coffee } from "lucide-react"
 import type { FileItem } from "@/app/page"
+import { supabase } from "@/lib/supabaseClient"
+import { generateEmbedding } from "@/lib/minilmEmbeddings"
 
 interface SearchInterfaceProps {
   query: string
   onQueryChange: (query: string) => void
   onFileSelect: (file: FileItem) => void
 }
-
-// Mock search results with relevance scores
-const mockSearchResults: (FileItem & { relevance: number; snippet: string })[] = [
-  {
-    id: "1",
-    name: "Tax_Return_2023.pdf",
-    type: "document",
-    size: "2.4 MB",
-    modified: "2 weeks ago",
-    path: "/documents/finance",
-    vectorGroup: "Money Stuff",
-    relevance: 0.95,
-    snippet: "Annual tax return documentation for 2023 including W-2 forms, deductions, and filing information...",
-  },
-  {
-    id: "2",
-    name: "Budget_Analysis_Q4.xlsx",
-    type: "document",
-    size: "890 KB",
-    modified: "1 month ago",
-    path: "/documents/finance",
-    vectorGroup: "Money Stuff",
-    relevance: 0.87,
-    snippet: "Quarterly budget analysis with expense breakdowns, revenue projections, and tax implications...",
-  },
-  {
-    id: "3",
-    name: "Receipt_Scanner_App.py",
-    type: "code",
-    size: "45 KB",
-    modified: "3 weeks ago",
-    path: "/code/projects",
-    vectorGroup: "Code",
-    relevance: 0.72,
-    snippet: "Python script for scanning and categorizing receipts for tax purposes using OCR technology...",
-  },
-  {
-    id: "4",
-    name: "Financial_Planning_Notes.docx",
-    type: "document",
-    size: "156 KB",
-    modified: "1 week ago",
-    path: "/documents/personal",
-    vectorGroup: "Personal Stuff",
-    relevance: 0.68,
-    snippet: "Personal financial planning notes including tax strategies, investment planning, and retirement...",
-  },
-]
 
 const recentSearches = [
   "that PDF from last week",
@@ -83,30 +37,60 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
   const [isSearching, setIsSearching] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(true)
 
-  useEffect(() => {
+  const handleSearch = async () => {
     if (query.trim()) {
       setIsSearching(true)
       setShowSuggestions(false)
 
-      // Simulate search delay
-      const timer = setTimeout(() => {
-        // Filter results based on query (simple mock implementation)
-        const filtered = mockSearchResults.filter(
-          (result) =>
-            result.name.toLowerCase().includes(query.toLowerCase()) ||
-            result.snippet.toLowerCase().includes(query.toLowerCase()) ||
-            result.vectorGroup?.toLowerCase().includes(query.toLowerCase()),
-        )
-        setSearchResults(filtered)
-        setIsSearching(false)
-      }, 500)
+      try {
+        // Generate embedding locally using MiniLM
+        const queryEmbedding = await generateEmbedding(query);
 
-      return () => clearTimeout(timer)
+        const { data, error } = await supabase.rpc('match_documents', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.78, // Adjust this value based on your data and desired strictness
+          match_count: 10, // Number of results to retrieve
+        });
+
+        if (error) {
+          console.error("Error invoking match_documents function:", error);
+          setSearchResults([]);
+          return;
+        }
+        console.log("Supabase data:", data); // Log the data received from Supabase
+
+        const mappedResults: (FileItem & { relevance: number; snippet: string })[] = data.map((item: any) => ({
+          id: item.id,
+          filename: item.filename,
+          filepath: item.filepath,
+          date_created: item.date_created,
+          date_modified: item.date_modified,
+          similarity: item.similarity,
+          // Using filename for name and filepath for snippet to maintain privacy
+          name: item.filename,
+          modified: item.date_modified,
+          path: item.filepath,
+          snippet: item.filepath, // Using filepath as the snippet for privacy
+          type: "document", // Placeholder, you might infer this from filename or add a column to your DB
+          size: "N/A", // Placeholder, you might add a column to your DB
+          vectorGroup: "N/A", // Placeholder, you might add a column to your DB
+          relevance: item.similarity,
+        }));
+        setSearchResults(mappedResults);
+        console.log("Mapped search results:", mappedResults); // Log the mapped results
+      } catch (err) {
+        console.error("Unexpected error during search:", err);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+        console.log("isSearching after search:", false); // Log isSearching state
+      }
     } else {
-      setSearchResults([])
-      setShowSuggestions(true)
+      setSearchResults([]);
+      setShowSuggestions(true);
+      console.log("query is empty, searchResults cleared, showSuggestions true"); // Log when query is empty
     }
-  }, [query])
+  };
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -153,6 +137,11 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
               placeholder="Just ask for what you need (e.g., 'show me all tax-related PDFs from 2023')"
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearch();
+                }
+              }}
               className="pl-12 pr-4 py-3 text-lg border-2 border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 shadow-md focus:shadow-lg transition-all duration-200"
             />
             {query && (

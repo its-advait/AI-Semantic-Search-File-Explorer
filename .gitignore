@@ -35,3 +35,7 @@ qdrant_data/
 .env.*
 !.env.example
 Screenshot 2025-07-17 120434.png
+
+# Electron App specific ignores
+packages/electron-app/.next/
+packages/electron-app/models/
