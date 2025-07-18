@@ -5,10 +5,20 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, ImageIcon, Code, Video, Music, Grid, Maximize2, FolderOpen } from "lucide-react"
+import { FileText, ImageIcon, Code, Video, Music, Grid, Maximize2, FolderOpen, Loader2 } from "lucide-react"
 import type { ViewType } from "@/app/page"
 import { processDirectory } from "@/lib/fileProcessor"
 import { supabase } from "@/lib/supabaseClient"
+
+declare global {
+  interface Window {
+    electron: {
+      readDirectory: (dirPath: string) => Promise<{ name: string; isDirectory: boolean; path: string }[]>;
+      parseAndExtractText: (filePath: string) => Promise<{ text?: string; error?: string }>;
+      openDirectoryDialog: () => Promise<string | null>;
+    };
+  }
+}
 
 // Define the FileItem interface to match Supabase data + UI needs
 interface FileItem {
@@ -75,9 +85,13 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
   const [viewMode, setViewMode] = useState<"map" | "grid">("grid"); // Default to grid view
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
-  const [files, setFiles] = useState<FileItem>([]);
+  const [files, setFiles] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [totalFiles, setTotalFiles] = useState(0);
+  const [processedFiles, setProcessedFiles] = useState(0);
+  const [currentFileName, setCurrentFileName] = useState("");
+  const [selectedDirectory, setSelectedDirectory] = useState<string | null>(null);
 
   const fetchFiles = async () => {
     setLoading(true);
@@ -115,17 +129,38 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
     fetchFiles();
   }, []);
 
+  const handleSelectDirectory = async () => {
+    const directoryPath = await window.electron.openDirectoryDialog();
+    if (directoryPath) {
+      setSelectedDirectory(directoryPath);
+    }
+  };
+
   const handleProcessDirectory = async () => {
+    if (!selectedDirectory) {
+      alert("Please select a directory first.");
+      return;
+    }
+
     setProcessing(true);
-    // Hardcode a test path for now. In a real app, you'd let the user select this.
-    const testPath = "C:\\Users\\samcr\\BenchProject\\test_files"; // Adjust this to a path with test files
+    setTotalFiles(0);
+    setProcessedFiles(0);
+    setCurrentFileName("");
+    
     try {
-      await processDirectory(testPath);
+      await processDirectory(selectedDirectory, (progress) => {
+        setTotalFiles(progress.totalFiles);
+        setProcessedFiles(progress.processedFiles);
+        setCurrentFileName(progress.currentFileName);
+      });
       await fetchFiles(); // Refresh files after processing
     } catch (error) {
       console.error("Error processing directory:", error);
     } finally {
       setProcessing(false);
+      setTotalFiles(0); // Reset progress indicators
+      setProcessedFiles(0);
+      setCurrentFileName("");
     }
   };
 
@@ -173,10 +208,24 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
       {/* Controls */}
       <div className="p-4 border-b bg-background/95 backdrop-blur">
         <div className="flex flex-wrap items-center gap-4">
-          <Button onClick={handleProcessDirectory} disabled={processing} className="flex items-center gap-2">
+          <Button onClick={handleSelectDirectory} disabled={processing} className="flex items-center gap-2">
             <FolderOpen className="w-4 h-4" />
-            {processing ? "Processing..." : "Scan Local Files"}
+            Select Directory
           </Button>
+          <Button onClick={handleProcessDirectory} disabled={processing || !selectedDirectory} className="flex items-center gap-2">
+            {processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderOpen className="w-4 h-4" />}
+            {processing ? "Scanning..." : "Scan Selected Directory"}
+          </Button>
+          {selectedDirectory && (
+            <div className="text-sm text-muted-foreground truncate max-w-xs">
+              Selected: {selectedDirectory}
+            </div>
+          )}
+          {processing && totalFiles > 0 && (
+            <div className="text-sm text-muted-foreground">
+              Processing {processedFiles} of {totalFiles} files: {currentFileName}
+            </div>
+          )}
           <div className="flex items-center gap-2">
             <Button variant={viewMode === "map" ? "default" : "outline"} size="sm" onClick={() => setViewMode("map")}>
               <Maximize2 className="w-4 h-4 mr-2" />
@@ -214,7 +263,7 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
             <SelectContent>
               <SelectItem value="name">Name</SelectItem>
               <SelectItem value="type">Type</SelectItem>
-              {/* Add more sort options if size/modified are populated */}
+              {/* Add more sort options if size/modified are properly populated */}
             </SelectContent>
           </Select>
         </div>
@@ -228,7 +277,7 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
           </div>
         ) : filteredAndSortedFiles.length === 0 ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
-            No files found. Click "Scan Local Files" to populate.
+            No files found. Select a directory and click "Scan Selected Directory" to populate.
           </div>
         ) : viewMode === "map" ? (
           <div className="relative w-full h-full bg-gradient-to-br from-background to-muted/20">

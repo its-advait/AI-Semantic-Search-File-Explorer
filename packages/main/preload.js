@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electron', {
   getUserDataPath: () => ipcRenderer.invoke('get-user-data-path'),
   initializeModelCache: (modelPath) => ipcRenderer.invoke('initialize-model-cache', modelPath),
   readDirectory: (dirPath) => ipcRenderer.invoke('read-directory', dirPath),
-  readFileContent: (filePath) => ipcRenderer.invoke('read-file-content', filePath),
+  parseAndExtractText: (filePath) => ipcRenderer.invoke('parse-and-extract-text', filePath),
+  openDirectoryDialog: () => ipcRenderer.invoke('open-directory-dialog'),
 });
 

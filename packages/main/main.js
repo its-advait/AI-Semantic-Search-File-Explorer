@@ -1,5 +1,5 @@
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -22,24 +22,75 @@ ipcMain.handle('initialize-model-cache', (event, modelPath) => {
 ipcMain.handle('read-directory', async (event, dirPath) => {
   try {
     const files = await fs.promises.readdir(dirPath, { withFileTypes: true });
-    return files.map(file => ({
-      name: file.name,
-      isDirectory: file.isDirectory(),
-      path: path.join(dirPath, file.name)
+    const fileDetails = await Promise.all(files.map(async file => {
+      const fullPath = path.join(dirPath, file.name);
+      let stats = null;
+      try {
+        stats = await fs.promises.stat(fullPath);
+      } catch (statError) {
+        console.warn(`Could not get stats for ${fullPath}:`, statError.message);
+      }
+      return {
+        name: file.name,
+        isDirectory: file.isDirectory(),
+        path: fullPath,
+        dateCreated: stats ? stats.birthtime.toISOString() : null,
+        dateModified: stats ? stats.mtime.toISOString() : null,
+      };
     }));
+    return fileDetails;
   } catch (error) {
     console.error(`Error reading directory ${dirPath}:`, error);
     throw error;
   }
 });
 
-ipcMain.handle('read-file-content', async (event, filePath) => {
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+
+const MAX_FILE_SIZE_MB = 25; // 25 MB limit
+
+ipcMain.handle('parse-and-extract-text', async (event, filePath) => {
   try {
-    const content = await fs.promises.readFile(filePath, 'utf-8');
-    return content;
+    const stats = await fs.promises.stat(filePath);
+    const fileSizeMB = stats.size / (1024 * 1024);
+
+    if (fileSizeMB > MAX_FILE_SIZE_MB) {
+      return { error: `File too large: ${fileSizeMB.toFixed(2)} MB (max ${MAX_FILE_SIZE_MB} MB)` };
+    }
+
+    const fileExtension = path.extname(filePath).toLowerCase();
+    let content = '';
+
+    if (fileExtension === '.pdf') {
+      const dataBuffer = await fs.promises.readFile(filePath);
+      const data = await pdfParse(dataBuffer);
+      content = data.text;
+    } else if (fileExtension === '.docx') {
+      const dataBuffer = await fs.promises.readFile(filePath);
+      const result = await mammoth.extractRawText({ arrayBuffer: dataBuffer });
+      content = result.value;
+    } else if ([ '.txt', '.md', '.js', '.ts', '.json', '.py', '.html', '.css' ].includes(fileExtension)) {
+      content = await fs.promises.readFile(filePath, 'utf-8');
+    } else {
+      return { error: `Unsupported file type: ${fileExtension}` };
+    }
+
+    return { text: content };
   } catch (error) {
-    console.error(`Error reading file ${filePath}:`, error);
-    throw error;
+    console.error(`Error parsing file ${filePath}:`, error);
+    return { error: `Failed to parse file: ${error.message}` };
+  }
+});
+
+ipcMain.handle('open-directory-dialog', async (event) => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(BrowserWindow.getFocusedWindow(), {
+    properties: ['openDirectory'],
+  });
+  if (canceled) {
+    return null;
+  } else {
+    return filePaths[0];
   }
 });
 

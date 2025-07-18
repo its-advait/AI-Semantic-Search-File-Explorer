@@ -8,6 +8,8 @@
     "dev": "SET NODE_ENV=development&& electron ."
   },
   "dependencies": {
-    "electron": "^37.2.2"
+    "electron": "^37.2.2",
+    "mammoth": "^1.9.1",
+    "pdf-parse": "^1.1.1"
   }
 }

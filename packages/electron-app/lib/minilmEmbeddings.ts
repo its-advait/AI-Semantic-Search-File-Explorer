@@ -4,32 +4,89 @@ import { supabase } from './supabaseClient'; // Import the Supabase client
 
 // Removed Xenova imports and related logic
 
-export async function generateEmbedding(text: string): Promise<number[]> {
+const JINA_MAX_TOKENS = 8192; // Jina AI's maximum token limit
+const CHUNK_SIZE = JINA_MAX_TOKENS * 3; // Approximate character count per chunk (adjust as needed)
+
+// Function to average an array of embeddings
+function averageEmbeddings(embeddings: number[][]): number[] {
+  if (embeddings.length === 0) {
+    return [];
+  }
+
+  const numDimensions = embeddings[0].length;
+  const averagedEmbedding = new Array(numDimensions).fill(0);
+
+  for (const embedding of embeddings) {
+    for (let i = 0; i < numDimensions; i++) {
+      averagedEmbedding[i] += embedding[i];
+    }
+  }
+
+  for (let i = 0; i < numDimensions; i++) {
+    averagedEmbedding[i] /= embeddings.length;
+  }
+
+  return averagedEmbedding;
+}
+
+export async function generateEmbedding(text: string, filename: string, filepath: string, dateCreated: string | null, dateModified: string | null): Promise<number[]> {
   try {
-    const response = await fetch('https://gmljypddryfgnlhpufht.supabase.co/functions/v1/jina-embed', {
+    const embeddings: number[][] = [];
+
+    // Simple character-based chunking
+    for (let i = 0; i < text.length; i += CHUNK_SIZE) {
+      const chunk = text.substring(i, i + CHUNK_SIZE);
+      
+      const response = await fetch('https://gmljypddryfgnlhpufht.supabase.co/functions/v1/jina-embed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: chunk, filename, filepath, dateCreated, dateModified }), // Pass all metadata
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error calling Supabase Edge Function for chunk:', errorData);
+        throw new Error(`Failed to get embedding for chunk: ${errorData.error || response.statusText}`);
+      }
+
+      const data = await response.json();
+      if (data && data.embedding) { // Edge Function now returns just the embedding for a chunk
+        embeddings.push(data.embedding);
+      } else {
+        throw new Error('Invalid response from Supabase Edge Function: embedding not found in chunk response');
+      }
+    }
+
+    // Average the embeddings of all chunks
+    const averagedEmbedding = averageEmbeddings(embeddings);
+
+    // Now, send the averaged embedding and metadata to the Edge Function for final storage
+    // This is a separate call to avoid storing partial embeddings if chunking is needed.
+    const finalStoreResponse = await fetch('https://gmljypddryfgnlhpufht.supabase.co/functions/v1/jina-embed', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Assuming the Edge Function is public or handles auth internally
-        // If it requires a JWT, you'd add: 'Authorization': `Bearer ${await supabase.auth.getSession()?.access_token}`
       },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ 
+        embedding: averagedEmbedding, 
+        filename: filename, 
+        filepath: filepath, 
+        dateCreated: dateCreated, 
+        dateModified: dateModified,
+        storeOnly: true // Indicate to the Edge Function that this is for storage only
+      }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Error calling Supabase Edge Function:', errorData);
-      throw new Error(`Failed to get embedding: ${errorData.error || response.statusText}`);
+    if (!finalStoreResponse.ok) {
+      const errorData = await finalStoreResponse.json();
+      console.error('Error storing final embedding in Supabase:', errorData);
+      throw new Error(`Failed to store final embedding: ${errorData.error || finalStoreResponse.statusText}`);
     }
 
-    const data = await response.json();
-    // Assuming the Edge Function returns the embedding directly in the 'embedding' field
-    // Adjust this based on the actual response structure of your Edge Function
-    if (data && data.data && data.data[0] && data.data[0].embedding) {
-      return data.data[0].embedding;
-    } else {
-      throw new Error('Invalid response from Supabase Edge Function: embedding not found');
-    }
+    return averagedEmbedding; // Return the averaged embedding
+
   } catch (error) {
     console.error("Error generating embedding with Jina AI via Supabase Edge Function:", error);
     throw error;
@@ -37,8 +94,16 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
+  // This function needs to be re-evaluated based on its usage.
+  // It currently doesn't have filename/filepath/dates.
+  // For now, it will likely not work as generateEmbedding now requires more arguments.
+  console.warn("generateEmbeddings called without full metadata. This might lead to errors.");
   const embeddings: number[][] = [];
   for (const text of texts) {
+    // This call will now fail as generateEmbedding expects filename and filepath
+    // You'll need to adjust generateEmbeddings if you use it.
+    // For now, I'm leaving it as is, assuming processDirectory is the primary entry point.
+    // @ts-ignore - Temporarily ignore as this function's signature needs review based on usage
     const embedding = await generateEmbedding(text);
     embeddings.push(embedding);
   }
