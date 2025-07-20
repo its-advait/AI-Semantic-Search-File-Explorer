@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { openRouterService } from "@/lib/openRouterService"
 
 export function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false)
@@ -14,6 +15,9 @@ export function AiAssistant() {
   const [messages, setMessages] = useState([
     { type: "ai", text: "Hello! I'm your LibrAIry assistant. How can I help you organize or find your files today?" },
   ])
+  const [apiResponse, setApiResponse] = useState<any>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
 
   const tips = [
     "Try the 'Semantic Explorer' to see how your files are grouped by content.",
@@ -34,6 +38,18 @@ export function AiAssistant() {
       }, 1000)
     }
   }
+
+  const handleTestOpenRouter = async () => {
+    try {
+      setApiError(null);
+      const response = await openRouterService.generateText("Hello, world!");
+      setApiResponse(response);
+      console.log("OpenRouter Response:", response);
+    } catch (error: any) {
+      setApiError(error.message);
+      console.error("OpenRouter Error:", error);
+    }
+  };
 
   return (
     <TooltipProvider>
@@ -80,6 +96,9 @@ export function AiAssistant() {
                   <Sparkles className="w-4 h-4" />
                 </Button>
               </div>
+              <Button onClick={handleTestOpenRouter}>Test OpenRouter</Button>
+              {apiResponse && <pre className="mt-2 p-2 bg-gray-100 rounded-md">{JSON.stringify(apiResponse, null, 2)}</pre>}
+              {apiError && <p className="mt-2 text-red-500">{apiError}</p>}
             </CardContent>
           </Card>
         )}
