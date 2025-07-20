@@ -85,7 +85,19 @@ ipcMain.handle('parse-and-extract-text', async (event, filePath) => {
 
 ipcMain.handle('open-file', async (event, filePath) => {
   try {
-    await shell.openPath(filePath);
+    if (process.platform === 'darwin') {
+      // For macOS, use the 'open' command
+      const { exec } = require('child_process');
+      exec(`open "${filePath}"`, (error) => {
+        if (error) {
+          console.error(`Failed to open file ${filePath}:`, error);
+          // No need to return here, let the outer catch handle it
+        }
+      });
+    } else {
+      // For other platforms (like Windows), use shell.openPath
+      await shell.openPath(filePath);
+    }
     return { success: true };
   } catch (error) {
     console.error(`Failed to open file ${filePath}:`, error);
