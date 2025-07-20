@@ -1,9 +1,16 @@
 package fileprocessor
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"mime/multipart"
+	"net/http"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/ai-file-explorer/pocketbase-modifications/internal/crawler"
 	"github.com/ai-file-explorer/pocketbase-modifications/internal/embeddings"
@@ -15,14 +22,18 @@ type Service struct {
 	db               dbx.Builder
 	crawler         *crawler.Service
 	embeddingService *embeddings.Service
+	pocketbaseURL   string
+	adminToken      string
 }
 
 // NewService creates a new file processor service
-func NewService(db dbx.Builder, apiKey string) *Service {
+func NewService(db dbx.Builder, apiKey string, pocketbaseURL, adminToken string) *Service {
 	return &Service{
 		db:               db,
 		crawler:         crawler.NewService(),
 		embeddingService: embeddings.NewService(db, apiKey),
+		pocketbaseURL:    pocketbaseURL,
+		adminToken:       adminToken,
 	}
 }
 
@@ -54,75 +65,175 @@ func (s *Service) ProcessDirectory(dirPath string) error {
 	return nil
 }
 
-// processFile processes a single file and generates embeddings
-func (s *Service) processFile(file crawler.FileInfo) error {
-	// Check if file already exists in database
-	var existingId string
-	err := s.db.NewQuery(`
-		SELECT id FROM files WHERE path = {:path}
-	`).Bind(map[string]any{
-		"path": file.Path,
-	}).Row(&existingId)
-	
-	var fileId string
+// authenticateAdmin authenticates with PocketBase and returns a session token
+func (s *Service) authenticateAdmin() (string, error) {
+	// Create auth request body
+	authData := map[string]string{
+		"identity": "C9ne7298@gmail.com",
+		"password": "ZeroIsKing7298!",
+	}
+	jsonData, err := json.Marshal(authData)
 	if err != nil {
-		// Insert new file record and get the generated ID
-		err := s.db.NewQuery(`
-			INSERT INTO files (path, name, size, content_type, content, extension, mod_time, embedding_status, created, updated)
-			VALUES ({:path}, {:name}, {:size}, {:content_type}, {:content}, {:extension}, {:mod_time}, 'pending', datetime('now'), datetime('now'))
-			RETURNING id
-		`).Bind(map[string]any{
-			"path":         file.Path,
-			"name":         file.Name,
-			"size":         file.Size,
-			"content_type": file.ContentType,
-			"content":      file.Content,
-			"extension":    file.Extension,
-			"mod_time":     file.ModTime.Format("2006-01-02 15:04:05"),
-		}).Row(&fileId)
-		
-		if err != nil {
-			return fmt.Errorf("failed to insert file record: %w", err)
-		}
-	} else {
-		// Update existing file record
-		fileId = existingId
-		_, err = s.db.NewQuery(`
-			UPDATE files SET 
-				name = {:name},
-				size = {:size},
-				content_type = {:content_type},
-				content = {:content},
-				extension = {:extension},
-				mod_time = {:mod_time},
-				updated = datetime('now')
-			WHERE id = {:id}
-		`).Bind(map[string]any{
-			"id":           fileId,
-			"name":         file.Name,
-			"size":         file.Size,
-			"content_type": file.ContentType,
-			"content":      file.Content,
-			"extension":    file.Extension,
-			"mod_time":     file.ModTime.Format("2006-01-02 15:04:05"),
-		}).Execute()
-		
-		if err != nil {
-			return fmt.Errorf("failed to update file record: %w", err)
-		}
+		return "", fmt.Errorf("failed to marshal auth data: %w", err)
+	}
+
+	// Create auth request
+	req, err := http.NewRequest("POST", s.pocketbaseURL+"/api/admins/auth-with-password", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("failed to create auth request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send auth request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to send auth request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check auth response status
+	if resp.StatusCode >= 400 {
+		respBody, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("authentication failed: %s - %s", resp.Status, string(respBody))
+	}
+
+	// Parse auth response to get token
+	var authResult struct {
+		Token string `json:"token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&authResult); err != nil {
+		return "", fmt.Errorf("failed to parse auth response: %w", err)
+	}
+
+	if authResult.Token == "" {
+		return "", fmt.Errorf("empty token in auth response")
+	}
+
+	return authResult.Token, nil
+}
+
+// processFile processes a single file and stores it in PocketBase
+func (s *Service) processFile(file crawler.FileInfo) error {
+	// Create a buffer to store the request body
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	
+	// Add file fields to the form
+	part, err := writer.CreateFormFile("file", filepath.Base(file.Path))
+	if err != nil {
+		return fmt.Errorf("failed to create form file: %w", err)
 	}
 	
-	// Generate embeddings if content is available
-	if file.Content != "" && !strings.Contains(file.Content, "Content extraction not implemented") {
-		if err := s.generateEmbeddings(fileId, file.Content); err != nil {
-			log.Printf("⚠️  Failed to generate embeddings for %s: %v", file.Path, err)
-			s.updateEmbeddingStatus(fileId, "failed")
-		} else {
-			s.updateEmbeddingStatus(fileId, "completed")
-		}
+	// Write file content to the form
+	_, err = io.WriteString(part, file.Content)
+	if err != nil {
+		return fmt.Errorf("failed to write file content: %w", err)
 	}
 	
-	return nil
+	// Add metadata fields
+	_ = writer.WriteField("name", file.Name)
+	_ = writer.WriteField("path", file.Path)
+	_ = writer.WriteField("size", fmt.Sprintf("%d", file.Size))
+	_ = writer.WriteField("content_type", file.ContentType)
+	_ = writer.WriteField("extension", file.Extension)
+	_ = writer.WriteField("mod_time", file.ModTime.Format(time.RFC3339))
+	_ = writer.WriteField("embedding_status", "pending")
+	
+	// Close the writer to finalize the form
+	err = writer.Close()
+	if err != nil {
+		return fmt.Errorf("failed to close form writer: %w", err)
+	}
+	
+	// Create a new request
+	req, err := http.NewRequest("POST", s.pocketbaseURL+"/api/collections/RealFiles/records", body)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	
+	// Set headers
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	
+	// Try different authentication methods
+	authMethods := []struct {
+		header string
+		value string
+	}{
+		{"X-PocketBase-Token", s.adminToken},  // Try X-PocketBase-Token header
+		{"Authorization", "Bearer " + s.adminToken},  // Try Bearer token
+		{"Authorization", "Token " + s.adminToken},   // Try Token prefix
+		{"Authorization", s.adminToken},              // Try raw token
+	}
+	
+	var lastError error
+	
+	for _, auth := range authMethods {
+		// Create a new request for each attempt to avoid header conflicts
+		req, err := http.NewRequest("POST", s.pocketbaseURL+"/api/collections/RealFiles/records", body)
+		if err != nil {
+			lastError = fmt.Errorf("failed to create request: %w", err)
+			continue
+		}
+		
+		// Set headers
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+		req.Header.Set(auth.header, auth.value)
+		
+		// Truncate token for logging (show first 5 chars)
+		tokenPreview := auth.value
+		if len(tokenPreview) > 5 {
+			tokenPreview = tokenPreview[:5] + "..."
+		}
+		log.Printf("Trying authentication with %s: %s", auth.header, tokenPreview)
+		
+		// Send the request
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			lastError = fmt.Errorf("failed to send request: %w", err)
+			continue
+		}
+		defer resp.Body.Close()
+		
+		// Read the response body for debugging
+		respBody, _ := io.ReadAll(resp.Body)
+		
+		// Check response status
+		if resp.StatusCode >= 400 {
+			lastError = fmt.Errorf("failed to upload file (auth: %s): %s - %s", 
+				auth.header, resp.Status, string(respBody))
+			continue
+		}
+		
+		// If we got here, the request was successful
+		log.Printf("✅ Successfully uploaded file with %s", auth.header)
+		
+		// Parse response to get file ID
+		var result struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(respBody, &result); err != nil {
+			return fmt.Errorf("failed to parse response: %w", err)
+		}
+		
+		// Generate embeddings if content is available
+		if file.Content != "" && !strings.Contains(file.Content, "Content extraction not implemented") {
+			if err := s.generateEmbeddings(result.ID, file.Content); err != nil {
+				log.Printf("⚠️  Failed to generate embeddings for %s: %v", file.Path, err)
+				s.updateEmbeddingStatus(result.ID, "failed")
+			} else {
+				s.updateEmbeddingStatus(result.ID, "completed")
+			}
+		}
+		
+		return nil
+	}
+	
+	// If we get here, all authentication methods failed
+	return fmt.Errorf("all authentication methods failed. Last error: %w", lastError)
 }
 
 // updateEmbeddingStatus updates the embedding status for a file

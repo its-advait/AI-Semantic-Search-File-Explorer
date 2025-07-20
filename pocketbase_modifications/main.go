@@ -8,24 +8,86 @@ import (
 	"github.com/ai-file-explorer/pocketbase-modifications/internal/fileprocessor"
 	"github.com/ai-file-explorer/pocketbase-modifications/internal/mcp"
 	"github.com/ai-file-explorer/pocketbase-modifications/internal/search"
-	_ "github.com/ai-file-explorer/pocketbase-modifications/internal/sqlite_driver"
-	_ "github.com/ai-file-explorer/pocketbase-modifications/migrations"
-
-	"github.com/pocketbase/dbx"
+	"github.com/ai-file-explorer/pocketbase-modifications/internal/sqlite_driver"
+	"github.com/joho/godotenv"
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/spf13/cobra"
 )
 
+// createFilesCollection creates the files collection in PocketBase if it doesn't exist
+func createFilesCollection(app *pocketbase.PocketBase) error {
+	// Check if collection already exists
+	var exists bool
+	err := app.DB().NewQuery(`SELECT 1 FROM _collections WHERE name = 'files'`).Row(&exists)
+	if err == nil && exists {
+		return nil // Collection already exists
+	}
+
+	// Create the collection
+	_, err = app.DB().NewQuery(`
+		INSERT INTO _collections (id, created, updated, name, type, system, schema, listRule, viewRule, createRule, updateRule, deleteRule)
+		VALUES (
+			hex(randomblob(16)),
+			strftime('%Y-%m-%d %H:%M:%fZ'),
+			strftime('%Y-%m-%d %H:%M:%fZ'),
+			'files',
+			'base',
+			0,
+			'[
+				{"system":false,"id":"path","name":"path","type":"text","required":true,"unique":true},
+				{"system":false,"id":"name","name":"name","type":"text","required":true},
+				{"system":false,"id":"size","name":"size","type":"number","required":true},
+				{"system":false,"id":"content_type","name":"content_type","type":"text","required":true},
+				{"system":false,"id":"content","name":"content","type":"text","required":false},
+				{"system":false,"id":"extension","name":"extension","type":"text","required":true},
+				{"system":false,"id":"mod_time","name":"mod_time","type":"date","required":true},
+				{"system":false,"id":"embedding_status","name":"embedding_status","type":"text","required":true}
+			]',
+			null,
+			null,
+			null,
+			null,
+			null
+		)
+	`).Execute()
+
+	return err
+}
+
 func main() {
+	// Load environment variables from .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: Failed to load .env file: %v", err)
+	}
+
+	// Initialize the PocketBase app
 	app := pocketbase.NewWithConfig(pocketbase.Config{
 		DefaultDataDir: "pb_data",
-		DBConnect: func(dbPath string) (*dbx.DB, error) {
-			// Use our custom SQLite driver with vec and rembed extensions
-			return dbx.Open("sqlite-vec-rembed", dbPath)
-		},
 	})
+
+	// Register the custom SQLite driver with extensions
+	if err := sqlite_driver.InitCustomDriver(); err != nil {
+		log.Fatalf("Failed to initialize custom SQLite driver: %v", err)
+	}
+
+	// Initialize the app (this will set up the database connection)
+	if err := app.Bootstrap(); err != nil {
+		log.Fatalf("Failed to bootstrap application: %v", err)
+	}
+
+	// Initialize services with the database connection
+	searchSvc := search.NewService(app.DB())
+	_ = searchSvc // Use searchSvc to avoid unused variable error
+	
+	embeddingSvc := embeddings.NewService(app.DB(), os.Getenv("OPENAI_API_KEY"))
+	_ = embeddingSvc // Use embeddingSvc to avoid unused variable error
+
+	// Create files collection on app start
+	if err := createFilesCollection(app); err != nil {
+		log.Printf("Warning: Failed to create files collection: %v", err)
+	}
 
 	// Add migrate command
 	migratecmd.MustRegister(app, app.RootCmd, migratecmd.Config{
@@ -47,7 +109,18 @@ func main() {
 			}
 
 			// Create file processor service
-			processor := fileprocessor.NewService(app.DB(), os.Getenv("OPENAI_API_KEY"))
+			pocketbaseURL := "http://127.0.0.1:8091"
+			adminToken := os.Getenv("POCKETBASE_ADMIN_TOKEN")
+			if adminToken == "" {
+				log.Fatal("POCKETBASE_ADMIN_TOKEN environment variable is required")
+			}
+			
+			processor := fileprocessor.NewService(
+				app.DB(), 
+				os.Getenv("OPENAI_API_KEY"),
+				pocketbaseURL,
+				adminToken,
+			)
 			
 			// Process the directory
 			if err := processor.ProcessDirectory(dirPath); err != nil {
