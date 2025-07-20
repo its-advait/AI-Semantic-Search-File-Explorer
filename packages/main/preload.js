@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('electron', {
   readDirectory: (dirPath) => ipcRenderer.invoke('read-directory', dirPath),
   parseAndExtractText: (filePath) => ipcRenderer.invoke('parse-and-extract-text', filePath),
   openDirectoryDialog: () => ipcRenderer.invoke('open-directory-dialog'),
+  openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
 });
 

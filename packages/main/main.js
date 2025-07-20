@@ -1,5 +1,5 @@
 
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -80,6 +80,16 @@ ipcMain.handle('parse-and-extract-text', async (event, filePath) => {
   } catch (error) {
     console.error(`Error parsing file ${filePath}:`, error);
     return { error: `Failed to parse file: ${error.message}` };
+  }
+});
+
+ipcMain.handle('open-file', async (event, filePath) => {
+  try {
+    await shell.openPath(filePath);
+    return { success: true };
+  } catch (error) {
+    console.error(`Failed to open file ${filePath}:`, error);
+    return { success: false, error: error.message };
   }
 });
 

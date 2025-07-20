@@ -43,12 +43,23 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
       setShowSuggestions(false)
 
       try {
-        // Generate embedding locally using MiniLM
-        const queryEmbedding = await generateEmbedding(query);
+        // Generate embedding using Jina
+        const { data: embeddingData, error: embeddingError } = await supabase.functions.invoke('jina-embed', {
+          body: { text: query }
+        });
+
+        if (embeddingError) {
+          console.error("Error generating embedding:", embeddingError);
+          setSearchResults([]);
+          setIsSearching(false);
+          return;
+        }
+
+        const queryEmbedding = embeddingData.embedding;
 
         const { data, error } = await supabase.rpc('match_documents', {
           query_embedding: queryEmbedding,
-          match_threshold: 0.78, // Adjust this value based on your data and desired strictness
+          match_threshold: 0.70, // Adjust this value based on your data and desired strictness
           match_count: 10, // Number of results to retrieve
         });
 
@@ -66,14 +77,17 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
           date_created: item.date_created,
           date_modified: item.date_modified,
           similarity: item.similarity,
-          // Using filename for name and filepath for snippet to maintain privacy
           name: item.filename,
-          modified: item.date_modified,
+          modified: new Date(item.date_modified).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          }),
           path: item.filepath,
-          snippet: item.filepath, // Using filepath as the snippet for privacy
-          type: "document", // Placeholder, you might infer this from filename or add a column to your DB
-          size: "N/A", // Placeholder, you might add a column to your DB
-          vectorGroup: "N/A", // Placeholder, you might add a column to your DB
+          snippet: item.filepath,
+          type: item.filename.split('.').pop() || 'file',
+          size: "N/A", 
+          vectorGroup: "N/A",
           relevance: item.similarity,
         }));
         setSearchResults(mappedResults);
@@ -117,9 +131,9 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
 
     return parts.map((part, index) =>
       regex.test(part) ? (
-        <mark key={index} className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded">
+        <strong key={index} className="font-bold">
           {part}
-        </mark>
+        </strong>
       ) : (
         part
       ),
@@ -248,7 +262,7 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
                   <Card
                     key={result.id}
                     className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700"
-                    onClick={() => onFileSelect(result)}
+                    onClick={() => window.electron.openFile(result.filepath)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-4">
@@ -263,13 +277,10 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
-                            {result.path} • {result.size} • {result.modified}
+                            {result.modified}
                           </p>
                           <p className="text-sm">{highlightText(result.snippet, query)}</p>
                           <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs">
-                              {result.vectorGroup}
-                            </Badge>
                             <Badge variant="outline" className="text-xs">
                               {result.type}
                             </Badge>
