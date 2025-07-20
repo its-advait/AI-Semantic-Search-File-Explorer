@@ -1,10 +1,10 @@
 CREATE OR REPLACE FUNCTION match_documents (
-  query_embedding VECTOR(384), -- <--- IMPORTANT: Adjust this dimension if your MiniLM model outputs a different size
+  query_embedding VECTOR(2048), -- Jina embeddings are 2048 dimensions
   match_threshold FLOAT,
   match_count INT
 )
 RETURNS TABLE (
-  id uuid,
+  id BIGINT,
   filepath TEXT,
   filename TEXT,
   date_created TIMESTAMP WITH TIME ZONE,
@@ -16,7 +16,7 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT
-    documents.id,
+    documents.id_bigint,
     documents.filepath,
     documents.filename,
     documents.date_created,
