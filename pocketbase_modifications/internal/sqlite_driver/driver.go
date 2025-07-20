@@ -15,8 +15,15 @@ type CustomSQLiteDriver struct {
 	*sqlite3.SQLiteDriver
 }
 
+var driverInitialized bool
+
 // InitCustomDriver registers the custom SQLite driver with vec and rembed extensions
 func InitCustomDriver() error {
+	// Only initialize once
+	if driverInitialized {
+		return nil
+	}
+
 	// Enable sqlite-vec for all future connections
 	sqlite_vec.Auto()
 	log.Println("✅ sqlite-vec enabled globally")
@@ -39,16 +46,13 @@ func InitCustomDriver() error {
 				} else {
 					log.Println("✅ sqlite-vec extension available")
 				}
-				// vecPath := filepath.Join("extensions", "vec.dylib")
-				// if err := conn.LoadExtension(vecPath, "sqlite3_vec_init"); err != nil {
-				//     log.Printf("Warning: Failed to load sqlite-vec extension: %v", err)
-				// }
 
 				return nil
 			},
 		},
 	})
 
+	driverInitialized = true
 	return nil
 }
 
