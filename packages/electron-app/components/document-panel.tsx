@@ -254,37 +254,9 @@ export function DocumentPanel({ file, onClose }: DocumentPanelProps) {
                 {file.type === "document" && (
                   <div className="bg-white dark:bg-gray-900 border rounded-lg p-8 shadow-sm">
                     <div className="prose dark:prose-invert max-w-none">
-                      <h1>Project Proposal: Q4 Marketing Campaign</h1>
+                      <h1>{file.filename}</h1>
                       <p className="lead">
-                        This document outlines our comprehensive strategy for the fourth quarter marketing campaign,
-                        including budget allocation, timeline, and expected outcomes.
-                      </p>
-
-                      <h2>Executive Summary</h2>
-                      <p>
-                        Our Q4 marketing campaign aims to increase brand awareness and drive sales during the holiday
-                        season. With a proposed budget of $50,000, we plan to implement a multi-channel approach
-                        focusing on digital advertising, social media engagement, and content marketing.
-                      </p>
-
-                      <h2>Budget Breakdown</h2>
-                      <ul>
-                        <li>Digital Advertising: $30,000 (60%)</li>
-                        <li>Content Creation: $10,000 (20%)</li>
-                        <li>Social Media Management: $7,000 (14%)</li>
-                        <li>Analytics & Tools: $3,000 (6%)</li>
-                      </ul>
-
-                      <h2>Timeline</h2>
-                      <p>
-                        The campaign will run from October 1st through December 31st, 2024, with key milestones
-                        including Black Friday promotions and holiday-themed content releases.
-                      </p>
-
-                      <h2>Expected Outcomes</h2>
-                      <p>
-                        Based on previous campaign performance, we anticipate a 150% return on investment, with
-                        projected revenue of $75,000 from the $50,000 investment.
+                        File Path: {file.filepath}
                       </p>
                     </div>
                   </div>

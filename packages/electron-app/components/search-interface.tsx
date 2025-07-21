@@ -70,13 +70,12 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
         }
         console.log("Supabase data:", data); // Log the data received from Supabase
 
-        const mappedResults: (FileItem & { relevance: number; snippet: string })[] = data.map((item: any) => ({
+        const mappedResults: (FileItem & { snippet: string })[] = data.map((item: any) => ({
           id: item.id,
           filename: item.filename,
           filepath: item.filepath,
           date_created: item.date_created,
           date_modified: item.date_modified,
-          similarity: item.similarity,
           name: item.filename,
           modified: new Date(item.date_modified).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -88,7 +87,6 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
           type: item.filename.split('.').pop() || 'file',
           size: "N/A", 
           vectorGroup: "N/A",
-          relevance: item.similarity,
         }));
         setSearchResults(mappedResults);
         console.log("Mapped search results:", mappedResults); // Log the mapped results
@@ -272,9 +270,6 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
                             <h3 className="font-medium text-primary hover:underline">
                               {highlightText(result.name, query)}
                             </h3>
-                            <Badge variant="secondary" className="text-xs">
-                              {Math.round(result.relevance * 100)}% match
-                            </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-2">
                             {result.modified}

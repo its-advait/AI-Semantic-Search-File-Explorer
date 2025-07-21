@@ -31,7 +31,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { supabase } from "@/lib/supabaseClient";
 import type { ViewType, FileItem } from "@/app/page"
+
+interface SmartFolder {
+  id: string;
+  name: string;
+  description: string;
+}
+
+import type { ViewType, FileItem, SmartFolder } from "@/app/page"
 
 interface AppSidebarProps {
   currentView: ViewType
@@ -39,6 +48,8 @@ interface AppSidebarProps {
   onFileSelect: (file: FileItem) => void
   searchQuery: string
   onSearchChange: (query: string) => void
+  smartFolders: SmartFolder[];
+  onSmartFolderSelect: (folder: SmartFolder) => void;
 }
 
 const navigationItems = [
@@ -63,12 +74,12 @@ const smartGroups = [
   { name: "Random", count: 45, color: "bg-gradient-to-r from-gray-400 to-gray-600" },
 ]
 
-export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchChange }: AppSidebarProps) {
+export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchChange, smartFolders, onSmartFolderSelect }: AppSidebarProps) {
   const [animatedCounts, setAnimatedCounts] = useState<{ [key: string]: number }>({})
 
   useEffect(() => {
     // Animate counts when sidebar loads
-    ;[...fileTypes, ...smartGroups].forEach((item, index) => {
+    ;[...fileTypes].forEach((item, index) => {
       const count = "count" in item ? item.count : 0
       const key = "title" in item ? item.title : item.name
 
@@ -96,7 +107,7 @@ export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchCha
         {/* Brand Section */}
         <div className="flex items-center gap-3 mb-6 p-3 rounded-2xl glass-card">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-display clarity-text">librAIry</h2>
+            <h2 className="text-lg font-display clarity-text">LibrAIry</h2>
           </div>
         </div>
 
@@ -188,20 +199,17 @@ export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchCha
 
         <SidebarGroup>
           <SidebarGroupLabel className="text-gray-600 font-semibold text-xs uppercase tracking-wider mb-2">
-            Smart Groups
+            Smart Folders
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {smartGroups.map((group) => (
-                <SidebarMenuItem key={group.name}>
-                  <SidebarMenuButton className="rounded-xl hover:bg-white/20 text-gray-600 transition-all duration-300 group font-body">
+              {smartFolders.map((folder) => (
+                <SidebarMenuItem key={folder.id}>
+                  <SidebarMenuButton className="rounded-xl hover:bg-white/20 text-gray-600 transition-all duration-300 group font-body" onClick={() => onSmartFolderSelect(folder)}>
                     <div
-                      className={`w-3 h-3 rounded-full ${group.color} group-hover:scale-125 transition-transform duration-300 shadow-lg`}
+                      className={`w-3 h-3 rounded-full bg-gradient-to-r ${folder.color} group-hover:scale-125 transition-transform duration-300 shadow-lg`}
                     />
-                    <span>{group.name}</span>
-                    <Badge className="ml-auto bg-gray-100/50 text-gray-700 border-0 animate-count-up font-medium">
-                      {animatedCounts[group.name] || 0}
-                    </Badge>
+                    <span>{folder.name}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

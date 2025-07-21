@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Dashboard } from "@/components/dashboard"
@@ -15,56 +15,11 @@ import { Settings, HelpCircle, AppWindowIcon as Apps } from "lucide-react"
 import { AiAssistant } from "@/components/ai-assistant"
 import { ModelProvider, useModel } from "@/components/model-provider"
 import { Loading } from "@/components/ui/loading"
-import dynamic from 'next/dynamic';
-
-const AppSidebarClient = dynamic(() => import('@/components/app-sidebar').then(mod => mod.AppSidebar), { ssr: false });
-const DashboardClient = dynamic(() => import('@/components/dashboard').then(mod => mod.Dashboard), { ssr: false });
-
 import { supabase } from "@/lib/supabaseClient";
-
+import type { ViewType, FileItem, SmartFolder } from "@/app/page"
 import { SmartFolderView } from "@/components/smart-folder-view";
 
-export type ViewType = "dashboard" | "explorer" | "search" | "document" | "smart-folder";
-
-export interface FileItem {
-  id: string
-  filename: string
-  filepath: string
-  date_created: string
-  date_modified: string
-  type?: "document" | "image" | "code" | "video" | "audio" | "other" | "folder" // Keep for UI, can be derived
-  size?: string // Keep for UI, can be derived
-  vectorGroup?: string // Keep for UI, can be derived
-  similarity?: number
-  preview?: string
-  x?: number
-  y?: number
-}
-
-export interface SmartFolder {
-  id: string;
-  name: string;
-  description: string;
-  color?: string;
-}
-
-const HomeContentClient = dynamic(() => Promise.resolve(HomeContent), { ssr: false });
-
-
-
-const AppClient = dynamic(() => import('@/components/app-client'), { ssr: false });
-
-export default function Home() {
-  return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ModelProvider>
-        <AppClient />
-      </ModelProvider>
-    </ThemeProvider>
-  );
-}
-
-function HomeContent() {
+export default function AppClient() {
   const [currentView, setCurrentView] = useState<ViewType>("dashboard")
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
   const [selectedSmartFolder, setSelectedSmartFolder] = useState<SmartFolder | null>(null);
@@ -82,12 +37,7 @@ function HomeContent() {
     if (error) {
       console.error('Error fetching smart folders:', error);
     } else {
-      const colors = [
-        'from-purple-500 to-purple-700', 'from-blue-500 to-blue-700', 'from-green-500 to-green-700', 
-        'from-yellow-500 to-yellow-700', 'from-red-500 to-red-700', 'from-pink-500 to-pink-700', 
-        'from-indigo-500 to-indigo-700', 'from-teal-500 to-teal-700', 'from-orange-500 to-orange-700', 
-        'from-cyan-500 to-cyan-700'
-      ];
+      const colors = ['from-purple-500 to-purple-700', 'from-blue-500 to-blue-700', 'from-green-500 to-green-700', 'from-yellow-500 to-yellow-700', 'from-red-500 to-red-700'];
       const dataWithColors = data.map((folder, index) => ({ ...folder, color: colors[index % colors.length] }));
       setSmartFolders(dataWithColors);
     }
@@ -110,12 +60,11 @@ function HomeContent() {
     switch (currentView) {
       case "dashboard":
         return (
-          <DashboardClient
+          <Dashboard
             onViewChange={setCurrentView}
             onFileSelect={setSelectedFile}
             smartFolders={smartFolders}
             onSmartFolderCreated={fetchSmartFolders}
-            // Removed onGroupSelect prop
           />
         )
       case "explorer":
@@ -123,7 +72,6 @@ function HomeContent() {
           <SemanticExplorer
             onFileSelect={setSelectedFile}
             onViewChange={setCurrentView}
-            // Removed initialSelectedGroup prop
           />
         )
       case "search":
@@ -134,12 +82,11 @@ function HomeContent() {
         return <SmartFolderView folder={selectedSmartFolder!} onBack={() => setCurrentView("dashboard")} onFileSelect={setSelectedFile} />
       default:
         return (
-          <DashboardClient
+          <Dashboard
             onViewChange={setCurrentView}
             onFileSelect={setSelectedFile}
             smartFolders={smartFolders}
             onSmartFolderCreated={fetchSmartFolders}
-            // Removed onGroupSelect prop
           />
         )
     }
@@ -148,7 +95,7 @@ function HomeContent() {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-white dark:bg-gray-900">
-        <AppSidebarClient
+        <AppSidebar
           currentView={currentView}
           onViewChange={setCurrentView}
           onFileSelect={setSelectedFile}
@@ -161,7 +108,6 @@ function HomeContent() {
           }}
         />
         <div className="flex-1 flex flex-col">
-          {/* Google Drive Style Header */}
           <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors" />

@@ -43,8 +43,9 @@ export function AiAssistant() {
     try {
       setApiError(null);
       const response = await openRouterService.generateText("Hello, world!");
-      setApiResponse(response);
-      console.log("OpenRouter Response:", response);
+      const message = response.choices[0].message.content;
+      setApiResponse(message);
+      console.log("OpenRouter Response:", message);
     } catch (error: any) {
       setApiError(error.message);
       console.error("OpenRouter Error:", error);
@@ -97,7 +98,7 @@ export function AiAssistant() {
                 </Button>
               </div>
               <Button onClick={handleTestOpenRouter}>Test OpenRouter</Button>
-              {apiResponse && <pre className="mt-2 p-2 bg-gray-100 rounded-md">{JSON.stringify(apiResponse, null, 2)}</pre>}
+              {apiResponse && <p className="mt-2 p-2 bg-gray-100 rounded-md">{apiResponse}</p>}
               {apiError && <p className="mt-2 text-red-500">{apiError}</p>}
             </CardContent>
           </Card>

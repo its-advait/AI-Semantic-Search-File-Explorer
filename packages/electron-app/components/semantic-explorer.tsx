@@ -86,6 +86,8 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
   const [selectedGroup, setSelectedGroup] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("name");
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [smartFolders, setSmartFolders] = useState<any[]>([]);
+  const [fileToFolderMap, setFileToFolderMap] = useState<any>({});
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [totalFiles, setTotalFiles] = useState(0);
@@ -96,27 +98,40 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: documents, error: documentsError } = await supabase
         .from('documents')
-        .select('id, filename, filepath'); // Select only necessary fields for display
+        .select('id, filename, filepath');
 
-      if (error) {
-        console.error("Error fetching documents:", error);
-        setFiles([]);
-      } else {
-        const fetchedFiles: FileItem[] = data.map((item: any) => ({
-          id: item.id.toString(),
-          name: item.filename,
-          path: item.filepath,
-          type: getFileType(item.filename),
-          size: "N/A", // Placeholder
-          modified: "N/A", // Placeholder
-          vectorGroup: "Processed Files", // Generic group for now
-          x: Math.random() * 100, // Random X for map view
-          y: Math.random() * 100, // Random Y for map view
-        }));
-        setFiles(fetchedFiles);
-      }
+      if (documentsError) throw documentsError;
+
+      const { data: folders, error: foldersError } = await supabase
+        .from('smart_folders')
+        .select('*, smart_folder_items(file_id)');
+
+      if (foldersError) throw foldersError;
+
+      const fileMap = {};
+      folders.forEach(folder => {
+        folder.smart_folder_items.forEach(item => {
+          fileMap[item.file_id] = folder;
+        });
+      });
+
+      const fetchedFiles: FileItem[] = documents.map((item: any) => ({
+        id: item.id.toString(),
+        name: item.filename,
+        path: item.filepath,
+        type: getFileType(item.filename),
+        size: "N/A",
+        modified: "N/A",
+        vectorGroup: fileMap[item.id] ? fileMap[item.id].name : "Uncategorized",
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+      }));
+
+      setFiles(fetchedFiles);
+      setSmartFolders(folders);
+      setFileToFolderMap(fileMap);
     } catch (err) {
       console.error("Unexpected error fetching documents:", err);
       setFiles([]);
@@ -182,11 +197,10 @@ export function SemanticExplorer({ onFileSelect, onViewChange }: SemanticExplore
   };
 
   // Dynamic vector groups based on fetched data (simplified)
-  const uniqueVectorGroups = Array.from(new Set(files.map(f => f.vectorGroup))).filter(Boolean);
-  const displayVectorGroups = uniqueVectorGroups.map(groupName => ({
-    name: groupName,
-    color: "bg-gray-500", // All same color for now
-    count: files.filter(f => f.vectorGroup === groupName).length,
+  const displayVectorGroups = smartFolders.map((folder, index) => ({
+    name: folder.name,
+    color: `bg-gradient-to-r ${folder.color || `from-gray-500 to-gray-700`}`,
+    count: files.filter(f => f.vectorGroup === folder.name).length,
   }));
 
   const filteredAndSortedFiles = files.filter(file => 

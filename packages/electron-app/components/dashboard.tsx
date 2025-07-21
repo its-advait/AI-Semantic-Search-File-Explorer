@@ -29,9 +29,15 @@ import {
 import type { ViewType, FileItem } from "@/app/page"
 import { Badge } from "@/components/ui/badge"
 
+import { supabase } from "@/lib/supabaseClient";
+
+import type { ViewType, FileItem, SmartFolder } from "@/app/page"
+
 interface DashboardProps {
   onViewChange: (view: ViewType) => void
   onFileSelect: (file: FileItem) => void
+  smartFolders: SmartFolder[];
+  onSmartFolderCreated: () => void;
   // Removed onGroupSelect prop
 }
 
@@ -193,10 +199,13 @@ const quickAccess = [
   },
 ]
 
-export function Dashboard({ onViewChange, onFileSelect }: DashboardProps) {
+export function Dashboard({ onViewChange, onFileSelect, smartFolders, onSmartFolderCreated }: DashboardProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list" | "timeline">("grid")
   const [searchQuery, setSearchQuery] = useState("")
   const [isAutoSorting, setIsAutoSorting] = useState(false)
+  const [isCreatingSmartFolder, setIsCreatingSmartFolder] = useState(false);
+  const [smartFolderResult, setSmartFolderResult] = useState<any>(null);
+  const [smartFolderError, setSmartFolderError] = useState<string | null>(null);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -227,6 +236,27 @@ export function Dashboard({ onViewChange, onFileSelect }: DashboardProps) {
       alert("Files auto-sorted! (Mock action)")
     }, 2000)
   }
+
+  const handleCreateSmartFolder = async () => {
+    setIsCreatingSmartFolder(true);
+    setSmartFolderError(null);
+    setSmartFolderResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('organize-files', {
+        body: { user_identifier: 'samcr' } // Assuming 'samcr' for now
+      });
+
+      if (error) throw error;
+
+      setSmartFolderResult(data);
+      onSmartFolderCreated(); // Call the callback to refresh the sidebar
+    } catch (err: any) {
+      setSmartFolderError(err.message);
+    } finally {
+      setIsCreatingSmartFolder(false);
+    }
+  };
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -353,7 +383,44 @@ export function Dashboard({ onViewChange, onFileSelect }: DashboardProps) {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card
+                className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-fade-in-slide-up"
+                style={{ animationDelay: "0.3s" }}
+                onClick={handleCreateSmartFolder}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-yellow-50 dark:bg-gray-700">
+                      {isCreatingSmartFolder ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600 dark:border-yellow-400"></div>
+                      ) : (
+                        <Sparkles className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100">Create Smart Folder</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {isCreatingSmartFolder ? "Analyzing your files..." : "Let AI find and group related files"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+            {smartFolderResult && (
+              <div className="mt-4 p-4 bg-green-100 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg">
+                <h4 className="font-semibold text-green-800 dark:text-green-200">Smart Folder Created!</h4>
+                <p className="text-sm text-green-700 dark:text-green-300">Name: {smartFolderResult.name}</p>
+                <p className="text-sm text-green-700 dark:text-green-300">Description: {smartFolderResult.description}</p>
+              </div>
+            )}
+            {smartFolderError && (
+              <div className="mt-4 p-4 bg-red-100 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg">
+                <h4 className="font-semibold text-red-800 dark:text-red-200">Error Creating Smart Folder</h4>
+                <p className="text-sm text-red-700 dark:text-red-300">{smartFolderError}</p>
+              </div>
+            )}
           </div>
 
           {/* Recent Files Section */}
