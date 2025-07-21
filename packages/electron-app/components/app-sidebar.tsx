@@ -29,6 +29,7 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { supabase } from "@/lib/supabaseClient";
@@ -42,6 +43,8 @@ interface SmartFolder {
 
 import type { ViewType, FileItem, SmartFolder } from "@/app/page"
 
+import { Trash2 } from "lucide-react";
+
 interface AppSidebarProps {
   currentView: ViewType
   onViewChange: (view: ViewType) => void
@@ -50,6 +53,7 @@ interface AppSidebarProps {
   onSearchChange: (query: string) => void
   smartFolders: SmartFolder[];
   onSmartFolderSelect: (folder: SmartFolder) => void;
+  onSmartFolderDeleted: () => void;
 }
 
 const navigationItems = [
@@ -74,8 +78,15 @@ const smartGroups = [
   { name: "Random", count: 45, color: "bg-gradient-to-r from-gray-400 to-gray-600" },
 ]
 
-export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchChange, smartFolders, onSmartFolderSelect }: AppSidebarProps) {
+export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchChange, smartFolders, onSmartFolderSelect, onSmartFolderDeleted }: AppSidebarProps) {
   const [animatedCounts, setAnimatedCounts] = useState<{ [key: string]: number }>({})
+
+  const handleDeleteFolder = async (folderId: string) => {
+    await supabase.functions.invoke('delete-smart-folder', {
+      body: { folder_id: folderId },
+    });
+    onSmartFolderDeleted(); // Notify parent to refresh
+  };
 
   useEffect(() => {
     // Animate counts when sidebar loads
@@ -205,12 +216,17 @@ export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchCha
             <SidebarMenu>
               {smartFolders.map((folder) => (
                 <SidebarMenuItem key={folder.id}>
-                  <SidebarMenuButton className="rounded-xl hover:bg-white/20 text-gray-600 transition-all duration-300 group font-body" onClick={() => onSmartFolderSelect(folder)}>
-                    <div
-                      className={`w-3 h-3 rounded-full bg-gradient-to-r ${folder.color} group-hover:scale-125 transition-transform duration-300 shadow-lg`}
-                    />
-                    <span>{folder.name}</span>
-                  </SidebarMenuButton>
+                  <div className="flex items-center justify-between w-full">
+                    <SidebarMenuButton className="flex-grow rounded-xl hover:bg-white/20 text-gray-600 transition-all duration-300 group font-body" onClick={() => onSmartFolderSelect(folder)}>
+                      <div
+                        className={`w-3 h-3 rounded-full bg-gradient-to-r ${folder.color} group-hover:scale-125 transition-transform duration-300 shadow-lg`}
+                      />
+                      <span>{folder.name}</span>
+                    </SidebarMenuButton>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteFolder(folder.id)} className="ml-2 h-7 w-7">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

@@ -204,6 +204,8 @@ export function Dashboard({ onViewChange, onFileSelect, smartFolders, onSmartFol
   const [searchQuery, setSearchQuery] = useState("")
   const [isAutoSorting, setIsAutoSorting] = useState(false)
   const [isCreatingSmartFolder, setIsCreatingSmartFolder] = useState(false);
+  const [isCreatingTopicFolder, setIsCreatingTopicFolder] = useState(false);
+  const [topic, setTopic] = useState("");
   const [smartFolderResult, setSmartFolderResult] = useState<any>(null);
   const [smartFolderError, setSmartFolderError] = useState<string | null>(null);
 
@@ -255,6 +257,28 @@ export function Dashboard({ onViewChange, onFileSelect, smartFolders, onSmartFol
       setSmartFolderError(err.message);
     } finally {
       setIsCreatingSmartFolder(false);
+    }
+  };
+
+  const handleCreateTopicFolder = async () => {
+    if (!topic) return;
+    setIsCreatingTopicFolder(true);
+    setSmartFolderError(null);
+    setSmartFolderResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-topic-folder', {
+        body: { user_identifier: 'samcr', topic },
+      });
+
+      if (error) throw error;
+
+      setSmartFolderResult(data);
+      onSmartFolderCreated();
+    } catch (err: any) {
+      setSmartFolderError(err.message);
+    } finally {
+      setIsCreatingTopicFolder(false);
     }
   };
 
@@ -343,43 +367,27 @@ export function Dashboard({ onViewChange, onFileSelect, smartFolders, onSmartFol
               </Card>
 
               <Card
-                className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-fade-in-slide-up"
-                style={{ animationDelay: "0.1s" }}
-                onClick={() => onViewChange("search")}
+                className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-fade-in-slide-up col-span-1 md:col-span-2"
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-green-50 dark:bg-gray-700">
                       <Brain className="w-5 h-5 text-green-600 dark:text-green-400" />
                     </div>
-                    <div>
-                      <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100">Smart search</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Ask questions about your files</p>
+                    <div className="flex-grow">
+                      <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100">Create Folder from Topic</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">e.g., "Photos from my trip to Japan"</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card
-                className="cursor-pointer hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 animate-fade-in-slide-up"
-                style={{ animationDelay: "0.2s" }}
-                onClick={handleAutoSort}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-purple-50 dark:bg-gray-700">
-                      {isAutoSorting ? (
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 dark:border-purple-400"></div>
-                      ) : (
-                        <Tag className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm text-gray-900 dark:text-gray-100">Auto-organize</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {isAutoSorting ? "Organizing your files..." : "Let AI organize your files"}
-                      </p>
-                    </div>
+                  <div className="mt-2 flex gap-2">
+                    <Input 
+                      placeholder="Enter a topic..."
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                    />
+                    <Button onClick={handleCreateTopicFolder} disabled={isCreatingTopicFolder || !topic}>
+                      {isCreatingTopicFolder ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

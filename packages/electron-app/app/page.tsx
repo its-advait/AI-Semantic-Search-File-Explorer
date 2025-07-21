@@ -131,7 +131,7 @@ function HomeContent() {
       case "document":
         return <DocumentPanel file={selectedFile} onClose={() => setCurrentView("dashboard")} />
       case "smart-folder":
-        return <SmartFolderView folder={selectedSmartFolder!} onBack={() => setCurrentView("dashboard")} onFileSelect={setSelectedFile} />
+        return <SmartFolderView folder={selectedSmartFolder!} onBack={() => setCurrentView("dashboard")} onFileSelect={setSelectedFile} onFolderDeleted={fetchSmartFolders} onFileRemoved={fetchSmartFolders} />
       default:
         return (
           <DashboardClient
@@ -159,6 +159,7 @@ function HomeContent() {
             setSelectedSmartFolder(folder);
             setCurrentView("smart-folder");
           }}
+          onSmartFolderDeleted={fetchSmartFolders}
         />
         <div className="flex-1 flex flex-col">
           {/* Google Drive Style Header */}

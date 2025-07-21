@@ -59,8 +59,8 @@ export function SearchInterface({ query, onQueryChange, onFileSelect }: SearchIn
 
         const { data, error } = await supabase.rpc('match_documents', {
           query_embedding: queryEmbedding,
-          match_threshold: 0.70, // Adjust this value based on your data and desired strictness
-          match_count: 10, // Number of results to retrieve
+          match_threshold: 0.65, // Adjust this value based on your data and desired strictness
+          match_count: 5, // Number of results to retrieve
         });
 
         if (error) {

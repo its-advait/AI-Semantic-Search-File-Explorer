@@ -5,36 +5,46 @@ import { supabase } from "@/lib/supabaseClient";
 import type { FileItem, SmartFolder } from "@/app/page";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText, X } from "lucide-react";
 
 interface SmartFolderViewProps {
   folder: SmartFolder;
   onBack: () => void;
   onFileSelect: (file: FileItem) => void;
+  onFolderDeleted: () => void;
+  onFileRemoved: () => void;
 }
 
-export function SmartFolderView({ folder, onBack, onFileSelect }: SmartFolderViewProps) {
+export function SmartFolderView({ folder, onBack, onFileSelect, onFolderDeleted, onFileRemoved }: SmartFolderViewProps) {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchFiles = async () => {
+    if (!folder) return;
+    setIsLoading(true);
+    const { data, error } = await supabase.rpc('get_smart_folder_files', {
+      p_folder_id: folder.id,
+    });
+
+    if (error) {
+      console.error("Error fetching files for smart folder:", error);
+    } else {
+      setFiles(data);
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
-    const fetchFiles = async () => {
-      if (!folder) return;
-      setIsLoading(true);
-      const { data, error } = await supabase.rpc('get_smart_folder_files', {
-        p_folder_id: folder.id,
-      });
-
-      if (error) {
-        console.error("Error fetching files for smart folder:", error);
-      } else {
-        setFiles(data);
-      }
-      setIsLoading(false);
-    };
-
     fetchFiles();
   }, [folder]);
+
+  const handleRemoveFile = async (fileId: string) => {
+    await supabase.functions.invoke('remove-file-from-smart-folder', {
+      body: { folder_id: folder.id, file_id: fileId },
+    });
+    fetchFiles(); // Refresh the list
+    onFileRemoved(); // Notify parent to refresh other components if needed
+  };
 
   return (
     <div className="p-6">
@@ -53,13 +63,18 @@ export function SmartFolderView({ folder, onBack, onFileSelect }: SmartFolderVie
       ) : (
         <div className="space-y-2">
           {files.map((file) => (
-            <Card key={file.id} className="cursor-pointer hover:shadow-md" onClick={() => window.electron.openFile(file.filepath)}>
-              <CardContent className="p-3 flex items-center">
-                <FileText className="w-5 h-5 mr-3" />
-                <div>
-                  <p className="font-semibold">{file.filename}</p>
-                  <p className="text-sm text-muted-foreground">{file.filepath}</p>
+            <Card key={file.id} className="hover:shadow-md">
+              <CardContent className="p-3 flex items-center justify-between">
+                <div className="flex items-center cursor-pointer" onClick={() => window.electron.openFile(file.filepath)}>
+                  <FileText className="w-5 h-5 mr-3" />
+                  <div>
+                    <p className="font-semibold">{file.filename}</p>
+                    <p className="text-sm text-muted-foreground">{file.filepath}</p>
+                  </div>
                 </div>
+                <Button variant="ghost" size="icon" onClick={() => handleRemoveFile(file.id)}>
+                  <X className="w-4 h-4" />
+                </Button>
               </CardContent>
             </Card>
           ))}
