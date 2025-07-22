@@ -1,5 +1,5 @@
 
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -130,6 +130,13 @@ function createWindow () {
 
 app.whenReady().then(() => {
   createWindow();
+
+  if (process.platform === 'darwin') {
+    const image = nativeImage.createFromPath(
+      path.join(__dirname, '../electron-app/public/bench_good.png')
+    );
+    app.dock.setIcon(image);
+  }
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
