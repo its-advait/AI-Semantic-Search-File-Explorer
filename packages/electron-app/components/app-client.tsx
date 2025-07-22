@@ -112,7 +112,7 @@ export default function AppClient() {
             <div className="flex items-center gap-4">
               <SidebarTrigger className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors" />
               <div className="flex items-center gap-3">
-                <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">LibrAIry</h1>
+                <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">Bench</h1>
               </div>
             </div>
 

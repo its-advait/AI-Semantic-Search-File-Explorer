@@ -118,7 +118,7 @@ export function AppSidebar({ currentView, onViewChange, searchQuery, onSearchCha
         {/* Brand Section */}
         <div className="flex items-center gap-3 mb-6 p-3 rounded-2xl glass-card">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-display clarity-text">LibrAIry</h2>
+            <h2 className="text-lg font-display clarity-text">Bench</h2>
           </div>
         </div>
 

@@ -108,6 +108,7 @@ function createWindow () {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: path.join(__dirname, '../electron-app/public/bench_good.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       webSecurity: false

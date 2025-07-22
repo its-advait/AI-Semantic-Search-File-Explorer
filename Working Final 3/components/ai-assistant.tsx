@@ -12,7 +12,7 @@ export function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false)
   const [chatInput, setChatInput] = useState("")
   const [messages, setMessages] = useState([
-    { type: "ai", text: "Hello! I'm your LibrAIry assistant. How can I help you organize or find your files today?" },
+    { type: "ai", text: "Hello! I'm your Bench assistant. How can I help you organize or find your files today?" },,
   ])
 
   const tips = [
@@ -43,7 +43,7 @@ export function AiAssistant() {
             <CardHeader className="flex flex-row items-center justify-between p-4 pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-primary" />
-                LibrAIry Assistant
+                Bench Assistant
               </CardTitle>
               <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-7 w-7">
                 <X className="w-4 h-4" />
@@ -97,7 +97,7 @@ export function AiAssistant() {
               </Button>
             </TooltipTrigger>
             <TooltipContent side="left" className="max-w-xs">
-              <p className="font-semibold mb-1">LibrAIry Assistant</p>
+              <p className="font-semibold mb-1">Bench Assistant</p>
               <p className="text-sm text-muted-foreground">
                 I can help you organize, search, and understand your files. Click to chat!
               </p>

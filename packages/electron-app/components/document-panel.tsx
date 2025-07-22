@@ -383,7 +383,7 @@ class FileOrganizer:
                     </CardHeader>
                     <CardContent>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Discover other documents in your LibrAIry that are semantically related to this one.
+                        Discover other documents in your Bench that are semantically related to this one.
                       </p>
                       <Button variant="outline" size="sm" className="w-full justify-start bg-transparent">
                         <Merge className="w-4 h-4 mr-2" />

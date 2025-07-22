@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
+import { Inter, JetBrains_Mono, Poppins } from "next/font/google"
 import "./globals.css"
 
 const inter = Inter({
@@ -15,8 +15,15 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 })
 
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: "600",
+  variable: "--font-poppins",
+  display: "swap",
+})
+
 export const metadata: Metadata = {
-  title: "LibrAIry - Your AI-Powered File Organizer",
+  title: "Bench - Your AI-Powered File Organizer",
   description: "An intelligent file management system powered by AI.",
   generator: "v0.dev",
 }
@@ -28,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans`}>{children}</body>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} ${poppins.variable} font-sans`}>{children}</body>
     </html>
   )
 }
