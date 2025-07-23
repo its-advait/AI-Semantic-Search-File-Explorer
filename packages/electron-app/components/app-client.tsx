@@ -32,7 +32,7 @@ export default function AppClient() {
     const { data, error } = await supabase
       .from('smart_folders')
       .select('*')
-      .eq('user_identifier', 'samcr');
+      .eq('user_identifier', 'noahlee');
 
     if (error) {
       console.error('Error fetching smart folders:', error);

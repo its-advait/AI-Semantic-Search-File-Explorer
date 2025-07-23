@@ -33,13 +33,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { supabase } from "@/lib/supabaseClient";
-import type { ViewType, FileItem } from "@/app/page"
 
-interface SmartFolder {
-  id: string;
-  name: string;
-  description: string;
-}
 
 import type { ViewType, FileItem, SmartFolder } from "@/app/page"
 

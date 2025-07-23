@@ -27,7 +27,7 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react"
-import type { ViewType, FileItem } from "@/app/page"
+
 import { Badge } from "@/components/ui/badge"
 
 import { supabase } from "@/lib/supabaseClient";
@@ -241,6 +241,7 @@ export function Dashboard({ onViewChange, onFileSelect, smartFolders, onSmartFol
   }
 
   const handleCreateSmartFolder = async () => {
+    console.log('Creating smart folder...');
     setIsCreatingSmartFolder(true);
     setSmartFolderError(null);
     setSmartFolderResult(null);
@@ -252,9 +253,14 @@ export function Dashboard({ onViewChange, onFileSelect, smartFolders, onSmartFol
 
       if (error) throw error;
 
-      setSmartFolderResult(data);
-      onSmartFolderCreated(); // Call the callback to refresh the sidebar
+      if (data.message) {
+        setSmartFolderError(data.message);
+      } else {
+        setSmartFolderResult(data);
+        onSmartFolderCreated(); // Call the callback to refresh the sidebar
+      }
     } catch (err: any) {
+      console.error('Error creating smart folder:', err);
       setSmartFolderError(err.message);
     } finally {
       setIsCreatingSmartFolder(false);
