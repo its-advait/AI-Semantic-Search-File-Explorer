@@ -9,8 +9,7 @@
     "start": "npm-run-all -p dev start:main",
     "start:main": "wait-on http://localhost:3000 && npm run dev -w @bench/main",
     "dev": "npm run dev -w @bench/renderer",
-    "build": "npm run build -w @bench/renderer",
-    "postinstall": "npm run build"
+    "build": "npm run build --workspace=@bench/renderer"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
