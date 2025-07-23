@@ -106,6 +106,7 @@ export default function AppClient() {
             setSelectedSmartFolder(folder);
             setCurrentView("smart-folder");
           }}
+          onSmartFolderDeleted={fetchSmartFolders}
         />
         <div className="flex-1 flex flex-col">
           <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">

@@ -25,6 +25,7 @@ import {
   CalendarDays,
   CheckCircle,
   Sparkles,
+  Loader2,
 } from "lucide-react"
 import type { ViewType, FileItem } from "@/app/page"
 import { Badge } from "@/components/ui/badge"
